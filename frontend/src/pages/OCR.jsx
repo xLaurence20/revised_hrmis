@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import api from '../api';
-import { Upload, Calculator, UserPlus, Save } from 'lucide-react';
+import { Upload, Calculator, UserPlus, Save, Printer } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -18,18 +18,23 @@ export default function OCR() {
     first_name: '', middle_name: '', last_name: '', email: '', birth_date: '', date_hired: new Date().toISOString().split('T')[0]
   });
 
-  // TLB State
+  // TLB States
   const [empId, setEmpId] = useState('');
+  const [separationDate, setSeparationDate] = useState('');
+  const [separationType, setSeparationType] = useState('Retirement');
+  const [deductions, setDeductions] = useState(0);
   const [tlbResult, setTlbResult] = useState(null);
-  
-  // NEW: Employee List State for Dropdown
+
+  // Employee list for the TLB dropdown
   const [employees, setEmployees] = useState([]);
 
-  // Fetch employees on mount for the dropdown
   useEffect(() => {
     api.get('/employees')
       .then(res => setEmployees(res.data))
-      .catch(err => console.error('Failed to load employees:', err));
+      .catch(err => {
+        console.error('Failed to load employees:', err);
+        toast.error('Failed to load employees');
+      });
   }, []);
 
   // --- REGEX PARSER ---
@@ -132,59 +137,183 @@ export default function OCR() {
 
   const handleTLB = async (e) => {
     e.preventDefault();
-    if (!empId) return toast.error('Please select an employee first');
-    
-    const loadingToast = toast.loading('Calculating TLB...');
+
+    if (!empId || !separationDate) {
+      return toast.error('Please fill all required fields');
+    }
+
+    const loadingToast = toast.loading('Computing TLB...');
+
     try {
-      const { data } = await api.get(`/tlb/calculate/${empId}`);
+      const { data } = await api.post('/tlb/compute', {
+        employeeId: empId,
+        separationDate,
+        separationType,
+        deductions: Number(deductions) || 0
+      });
+
       setTlbResult(data);
-      toast.success('Calculation complete', { id: loadingToast });
+      toast.success('Computation complete', { id: loadingToast });
     } catch (err) {
-      toast.error(err.response?.data?.error || 'Error computing TLB', { id: loadingToast });
+      toast.error(
+        err.response?.data?.error || 'Error computing TLB',
+        { id: loadingToast }
+      );
     }
   };
 
   return (
     <div className="p-8 max-w-7xl mx-auto space-y-8">
       
-      {/* TLB CALCULATOR */}
-      <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-        <h2 className="text-xl font-bold flex items-center gap-2 mb-4 text-slate-900">
-          <Calculator className="text-blue-600" /> Terminal Leave Benefits Calculator
+      {/* TLB CALCULATOR FORM */}
+      <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 no-print">
+        <h2 className="text-xl font-bold flex items-center gap-2 mb-6 text-slate-900">
+          <Calculator className="text-blue-600" /> Terminal Leave Benefits Computation
         </h2>
-        <form onSubmit={handleTLB} className="flex flex-col sm:flex-row gap-4 items-end">
-          <div className="w-full sm:w-96">
+        
+        <form onSubmit={handleTLB} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+          <div className="md:col-span-2">
             <label className="text-sm font-medium text-slate-700 block mb-1">Select Employee</label>
-            <select 
-              required 
-              className="w-full border border-slate-300 p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-slate-700" 
-              value={empId} 
-              onChange={e => setEmpId(e.target.value)}
-            >
+            <select required className="w-full border border-slate-300 p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-slate-700" value={empId} onChange={e => setEmpId(e.target.value)}>
               <option value="">-- Choose an employee --</option>
               {employees.map(emp => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.last_name}, {emp.first_name} ({emp.employee_no})
-                </option>
+                <option key={emp.id} value={emp.id}>{emp.last_name}, {emp.first_name} ({emp.employee_no})</option>
               ))}
             </select>
           </div>
-          <button type="submit" className="w-full sm:w-auto bg-blue-600 text-white font-medium px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
-            Calculate TLB
+
+          <div>
+            <label className="text-sm font-medium text-slate-700 block mb-1">Separation Date</label>
+            <input type="date" required className="w-full border border-slate-300 p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" value={separationDate} onChange={e => setSeparationDate(e.target.value)} />
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-slate-700 block mb-1">Separation Type</label>
+            <select className="w-full border border-slate-300 p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white text-slate-700" value={separationType} onChange={e => setSeparationType(e.target.value)}>
+              <option value="Retirement">Retirement</option>
+              <option value="Resignation">Resignation</option>
+              <option value="Transfer">Transfer</option>
+              <option value="Termination">Termination</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="text-sm font-medium text-slate-700 block mb-1">Authorized Deductions (₱)</label>
+            <input type="number" step="0.01" className="w-full border border-slate-300 p-2.5 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none" value={deductions} onChange={e => setDeductions(e.target.value)} />
+          </div>
+
+          <button type="submit" className="bg-blue-600 text-white font-medium px-6 py-2.5 rounded-lg hover:bg-blue-700 transition-colors shadow-sm md:col-span-4 lg:col-span-1">
+            Compute TLB
           </button>
         </form>
-
-        {tlbResult && (
-          <div className="mt-6 p-5 bg-blue-50/50 rounded-xl border border-blue-100 flex flex-col gap-1">
-            <p className="font-bold text-lg text-blue-900">{tlbResult.employee}</p>
-            <div className="flex gap-4 mt-2">
-               <p className="text-sm text-slate-600">Credits: <span className="font-semibold text-slate-900">{tlbResult.totalCredits} days</span></p>
-               <p className="text-sm text-slate-600">Daily Rate: <span className="font-semibold text-slate-900">₱{tlbResult.dailyRate}</span></p>
-            </div>
-            <p className="text-2xl font-bold text-blue-600 mt-3 border-t border-blue-200 pt-3">Est. TLB: ₱{tlbResult.tlbAmount}</p>
-          </div>
-        )}
       </div>
+
+      {/* TLB PRINTABLE RESULT */}
+      {tlbResult && (
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="p-4 border-b border-slate-200 bg-slate-50 flex justify-between items-center no-print">
+            <h3 className="font-bold text-slate-800">TLB Computation Preview</h3>
+            <button onClick={() => window.print()} className="flex items-center gap-2 bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-slate-800 transition-colors text-sm font-medium">
+              <Printer size={16} /> Print Computation
+            </button>
+          </div>
+
+          {/* PRINTABLE AREA */}
+          <div className="print-area bg-white p-12 text-black font-sans">
+            <div className="text-center mb-8 border-b-2 border-black pb-4">
+              <h1 className="font-bold text-2xl tracking-widest uppercase">Republic of the Philippines</h1>
+              <h2 className="font-bold text-xl uppercase mt-1">Municipality of La Paz, Agusan del Sur</h2>
+              <h3 className="font-semibold text-lg mt-2 uppercase">Terminal Leave Benefits Computation</h3>
+            </div>
+
+            <div className="grid grid-cols-2 gap-8 mb-8">
+              <div>
+                <p className="font-bold text-lg">{tlbResult.employee.name}</p>
+                <p className="text-sm">Employee No: {tlbResult.employee.employee_no}</p>
+              </div>
+              <div className="text-right">
+                <p>Separation Date: <strong>{new Date(tlbResult.separation.date).toLocaleDateString()}</strong></p>
+                <p>Separation Type: <strong>{tlbResult.separation.type}</strong></p>
+              </div>
+            </div>
+
+            <table className="w-full border-collapse border border-gray-400 text-sm mb-8">
+              <tbody>
+                <tr className="bg-gray-100">
+                  <td colSpan="2" className="border border-gray-400 p-2 font-bold uppercase">Salary Reference (Highest Received)</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 p-2 w-1/2">Highest Monthly Salary</td>
+                  <td className="border border-gray-400 p-2 font-bold text-right">₱ {tlbResult.salaryReference.amount}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 p-2">Position Title</td>
+                  <td className="border border-gray-400 p-2 text-right">{tlbResult.salaryReference.position}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 p-2">Effective Date of Salary</td>
+                  <td className="border border-gray-400 p-2 text-right">{new Date(tlbResult.salaryReference.date).toLocaleDateString()}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <table className="w-full border-collapse border border-gray-400 text-sm mb-8">
+              <tbody>
+                <tr className="bg-gray-100">
+                  <td colSpan="2" className="border border-gray-400 p-2 font-bold uppercase">Leave Credits Breakdown</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 p-2 w-1/2">Unused Vacation Leave (VL)</td>
+                  <td className="border border-gray-400 p-2 text-right">{tlbResult.leaveCredits.vl} days</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 p-2">Unused Sick Leave (SL)</td>
+                  <td className="border border-gray-400 p-2 text-right">{tlbResult.leaveCredits.sl} days</td>
+                </tr>
+                <tr className="font-bold">
+                  <td className="border border-gray-400 p-2 bg-gray-50">Total Leave Credits</td>
+                  <td className="border border-gray-400 p-2 text-right bg-gray-50">{tlbResult.leaveCredits.total} days</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <table className="w-full border-collapse border border-gray-400 text-sm mb-8">
+              <tbody>
+                <tr className="bg-gray-100">
+                  <td colSpan="2" className="border border-gray-400 p-2 font-bold uppercase">Computation Details</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 p-2 w-1/2">Constant Factor</td>
+                  <td className="border border-gray-400 p-2 text-right">{tlbResult.computation.constantFactor}</td>
+                </tr>
+                <tr className="font-bold">
+                  <td className="border border-gray-400 p-2 bg-gray-50">Gross TLB Amount (Tax-Exempt)</td>
+                  <td className="border border-gray-400 p-2 text-right bg-gray-50">₱ {tlbResult.computation.grossTLB}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-400 p-2 text-red-600">Less: Authorized Deductions</td>
+                  <td className="border border-gray-400 p-2 text-right text-red-600">( ₱ {tlbResult.computation.deductions} )</td>
+                </tr>
+                <tr className="font-bold text-lg bg-blue-50">
+                  <td className="border border-gray-400 p-2">NET TLB PAYABLE</td>
+                  <td className="border border-gray-400 p-2 text-right">₱ {tlbResult.computation.netTLB}</td>
+                </tr>
+              </tbody>
+            </table>
+
+            <div className="mt-16 flex justify-between px-8">
+              <div className="text-center w-64">
+                <p className="border-b border-black pb-1 font-bold uppercase">{tlbResult.employee.name}</p>
+                <p className="text-xs mt-1">Employee Signature</p>
+              </div>
+              <div className="text-center w-64">
+                <p className="border-b border-black pb-1 font-bold uppercase">HR MANAGER</p>
+                <p className="text-xs mt-1">Approving Authority</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* OCR PARSING */}
       <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200">
