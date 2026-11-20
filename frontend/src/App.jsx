@@ -3,7 +3,8 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Employees from './pages/Employees';
-import { Users, LayoutDashboard, LogOut } from 'lucide-react';
+import Attendance from './pages/Attendance';
+import { Users, LayoutDashboard, LogOut, Clock } from 'lucide-react';
 
 function Layout({ children }) {
   const { user, logout } = useAuth();
@@ -20,6 +21,9 @@ function Layout({ children }) {
           <Link to="/employees" className="flex items-center gap-3 p-3 rounded hover:bg-slate-800 text-slate-300">
             <Users size={20} /> Employees
           </Link>
+          <Link to="/attendance" className="flex items-center gap-3 p-3 rounded hover:bg-slate-800 text-slate-300">
+          <Clock size={20} /> Attendance
+        </Link>
         </nav>
         <div className="p-4 border-t border-slate-800">
           <button onClick={logout} className="flex items-center gap-3 p-3 rounded hover:bg-slate-800 text-red-400 w-full text-left">
@@ -42,6 +46,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<Layout><Dashboard /></Layout>} />
           <Route path="/employees" element={<Layout><Employees /></Layout>} />
+          <Route path="/attendance" element={<Layout><Attendance /></Layout>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

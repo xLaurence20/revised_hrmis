@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import authRoutes from './routes/auth.js';
 import 'dotenv/config';
 import employeeRoutes from './routes/employees.js';
+import attendanceRoutes from './routes/attendance.js';
 
 const app = express();
 app.set('trust proxy', 1); 
@@ -17,6 +18,7 @@ app.use(cookieParser());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/employees', employeeRoutes);
+app.use('/api/attendance', attendanceRoutes);
 
 app.get('/api/health', (req, res) => res.send('OK'));
 
