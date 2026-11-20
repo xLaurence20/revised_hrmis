@@ -135,4 +135,21 @@ router.get('/my-balances', authenticate, async (req, res) => {
   }
 });
 
+// POST /api/leaves/accrue - Monthly +1.25 VL / +1.25 SL credit accrual
+router.post('/accrue', verifyToken, requireRole(['administrator', 'hr_personnel']), async (req, res) => {
+  try {
+    const [result] = await db.query(
+      `UPDATE leave_balances lb
+       JOIN employees e ON lb.employee_id = e.id
+       SET lb.vacation_leave = lb.vacation_leave + 1.25,
+           lb.sick_leave = lb.sick_leave + 1.25
+       WHERE e.status = 'active' AND e.employment_status = 'regular'`
+    );
+    await logAudit(req.user.id, 'RUN_MONTHLY_ACCRUAL', `Credited +1.25 VL and +1.25 SL to ${result.affectedRows} regular employees`);
+    res.json({ message: `Credited +1.25 VL / +1.25 SL to ${result.affectedRows} regular employees.` });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;
