@@ -30,7 +30,7 @@ export default function Login() {
         className="absolute inset-0 z-0 bg-cover bg-center"
         style={{
           backgroundImage:
-            "url('https://images.unsplash.com/photo-1541885999903-401068277a1c?q=80&w=2070&auto=format&fit=crop')",
+            "url(/bg-hall.jpg)",
           filter: 'blur(4px) brightness(0.4)',
         }}
       />
