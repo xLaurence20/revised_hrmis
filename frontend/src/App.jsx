@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, NavLink } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, NavLink, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import Login from './pages/Login';
@@ -22,7 +22,10 @@ import {
 
 function Layout({ children }) {
   const { user, logout } = useAuth();
-  if (!user) return <Navigate to="/login" />;
+  const { pathname } = useLocation();
+  const isPublicHelp = pathname === '/help';
+
+  if (!user && !isPublicHelp) return <Navigate to="/login" />;
 
   const navItems = [
     { path: '/', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
@@ -75,19 +78,30 @@ function Layout({ children }) {
         </nav>
 
         <div className="p-4 border-t border-slate-800">
-          <div className="px-4 py-2 mb-2 rounded-lg bg-slate-800/60">
-            <p className="text-[11px] text-slate-400 uppercase font-semibold tracking-wider">
-              Active Role
-            </p>
-            <p className="text-sm font-medium text-slate-200 truncate">{user.role}</p>
-          </div>
-          <button
-            onClick={logout}
-            className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-500/10 text-red-400 hover:text-red-300 w-full text-left transition-colors"
-          >
-            <LogOut size={20} />
-            <span className="font-medium">Logout</span>
-          </button>
+          {user ? (
+            <>
+              <div className="px-4 py-2 mb-2 rounded-lg bg-slate-800/60">
+                <p className="text-[11px] text-slate-400 uppercase font-semibold tracking-wider">
+                  Active Role
+                </p>
+                <p className="text-sm font-medium text-slate-200 truncate">{user.role}</p>
+              </div>
+              <button
+                onClick={logout}
+                className="flex items-center gap-3 px-4 py-3 rounded-lg hover:bg-red-500/10 text-red-400 hover:text-red-300 w-full text-left transition-colors"
+              >
+                <LogOut size={20} />
+                <span className="font-medium">Logout</span>
+              </button>
+            </>
+          ) : (
+            <NavLink
+              to="/login"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold transition-colors"
+            >
+              <span>Sign In</span>
+            </NavLink>
+          )}
         </div>
       </aside>
 
@@ -105,10 +119,6 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
-          {/* Public User Manual accessible from Login page */}
-          <Route path="/manual" element={<UserManual />} />
-
-          {/* Authenticated Portal Routes */}
           <Route path="/" element={<Layout><Dashboard /></Layout>} />
           <Route path="/employees" element={<Layout><Employees /></Layout>} />
           <Route path="/attendance" element={<Layout><Attendance /></Layout>} />
