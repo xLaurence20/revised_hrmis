@@ -43,14 +43,38 @@ router.post('/login', async (req, res) => {
   }
 });
 
-router.post('/refresh', (req, res) => {
+router.post('/refresh', async (req, res) => {
   const token = req.cookies.refreshToken;
   if (!token) return res.status(401).json({ error: 'No refresh token' });
 
   try {
     const { id } = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
-    // In a full app, query DB here for fresh role/permissions
-    res.status(200).json({ message: 'Refreshed' }); 
+
+    // Re-fetch user and permissions to generate a fresh access token
+    const [users] = await pool.query(
+      `SELECT u.id, u.username, u.email, r.slug as role,
+       GROUP_CONCAT(p.slug) as permissions
+       FROM users u
+       JOIN roles r ON u.role_id = r.id
+       LEFT JOIN role_permissions rp ON r.id = rp.role_id
+       LEFT JOIN permissions p ON rp.permission_id = p.id
+       WHERE u.id = ? GROUP BY u.id`,
+      [id]
+    );
+
+    const user = users[0];
+    if (!user) return res.status(401).json({ error: 'User not found' });
+
+    const perms = user.permissions ? user.permissions.split(',') : [];
+    const payload = { id: user.id, role: user.role, permissions: perms };
+    
+    // Generate new Access Token
+    const accessToken = jwt.sign(payload, process.env.JWT_ACCESS_SECRET, { expiresIn: '15m' });
+
+    // Set the new cookie
+    res.cookie('accessToken', accessToken, { ...cookieOpts, maxAge: 15 * 60 * 1000 });
+    
+    res.status(200).json({ message: 'Refreshed' });
   } catch {
     res.status(401).json({ error: 'Invalid refresh token' });
   }
