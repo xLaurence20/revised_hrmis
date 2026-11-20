@@ -7,7 +7,7 @@ import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
 const isProd = process.env.NODE_ENV === 'production';
-const cookieOpts = { httpOnly: true, secure: isProd, sameSite: isProd ? 'none' : 'lax' };
+const cookieOpts = { httpOnly: true, secure: true, sameSite: 'none' };
 
 router.post('/login', async (req, res) => {
   const { identifier, password } = req.body;

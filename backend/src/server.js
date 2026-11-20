@@ -6,9 +6,12 @@ import 'dotenv/config';
 import employeeRoutes from './routes/employees.js';
 
 const app = express();
-app.set('trust proxy', 1); // REQUIRED FOR RENDER SECURE COOKIES
+app.set('trust proxy', 1); 
 
-app.use(cors({ origin: process.env.CORS_ORIGIN, credentials: true }));
+app.use(cors({ 
+  origin: process.env.CORS_ORIGIN, 
+  credentials: true 
+}));
 app.use(express.json());
 app.use(cookieParser());
 
