@@ -1,56 +1,88 @@
 import { useState } from 'react';
 import Tesseract from 'tesseract.js';
 import api from '../api';
-import { Upload, CheckCircle, Calculator, UserPlus, Save } from 'lucide-react';
+import { Upload, Calculator, UserPlus, Save } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 export default function OCR() {
   const navigate = useNavigate();
   
-  // OCR State
   const [image, setImage] = useState(null);
   const [text, setText] = useState('');
   const [progress, setProgress] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(1); // 1 = Upload, 2 = Review
+  const [step, setStep] = useState(1);
 
-  // Form State
   const [formData, setFormData] = useState({
-    first_name: '', last_name: '', email: '', birth_date: '', date_hired: new Date().toISOString().split('T')[0]
+    first_name: '', middle_name: '', last_name: '', email: '', birth_date: '', date_hired: new Date().toISOString().split('T')[0]
   });
 
-  // TLB State (Kept from previous phase)
   const [empId, setEmpId] = useState('');
   const [tlbResult, setTlbResult] = useState(null);
 
-  // Simple Heuristic Parser for PDS
-  const parsePDS = (rawText) => {
-    const lines = rawText.split('\n').map(l => l.trim()).filter(l => l);
-    let parsed = { ...formData };
+  // --- IMAGE PREPROCESSING ---
+  // Converts to grayscale and boosts contrast to help Tesseract ignore table lines
+  const preprocessImage = (imageSrc) => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = imageSrc;
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
 
-    lines.forEach((line, index) => {
-      const upper = line.toUpperCase();
-      
-      // Look for SURNAME
-      if (upper.includes('SURNAME') && index + 1 < lines.length) {
-        parsed.last_name = lines[index + 1].replace(/[^a-zA-Z ]/g, '');
-      }
-      // Look for FIRST NAME
-      if (upper.includes('FIRST NAME') && index + 1 < lines.length) {
-        parsed.first_name = lines[index + 1].replace(/[^a-zA-Z ]/g, '');
-      }
-      // Look for DATE OF BIRTH
-      if (upper.includes('DATE OF BIRTH') && index + 1 < lines.length) {
-        // Attempt to find a date format DD/MM/YYYY or similar
-        const dateMatch = lines[index + 1].match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/);
-        if (dateMatch) parsed.birth_date = `${dateMatch[3]}-${dateMatch[2]}-${dateMatch[1]}`;
-      }
-      // Look for EMAIL
-      if (upper.includes('E-MAIL') && index + 1 < lines.length) {
-        const emailMatch = lines[index + 1].match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-        if (emailMatch) parsed.email = emailMatch[0];
-      }
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const data = imageData.data;
+
+        for (let i = 0; i < data.length; i += 4) {
+          // Grayscale formula
+          const gray = data[i] * 0.3 + data[i + 1] * 0.59 + data[i + 2] * 0.11;
+          // Boost contrast
+          const finalColor = gray > 128 ? 255 : 0; 
+          
+          data[i] = finalColor;     // R
+          data[i + 1] = finalColor; // G
+          data[i + 2] = finalColor; // B
+        }
+
+        ctx.putImageData(imageData, 0, 0);
+        resolve(canvas.toDataURL('image/png'));
+      };
     });
+  };
+
+  // --- REGEX PARSER ---
+  const parsePDS = (rawText) => {
+    let parsed = { ...formData };
+    
+    // Remove extra spaces and newlines for easier matching
+    const cleanText = rawText.replace(/\s+/g, ' ').toUpperCase();
+
+    // 1. Last Name (Matches "SURNAME FORTU FIRST NAME" or "SURNAME: FORTU")
+    const lastNameMatch = cleanText.match(/SURNAME[:\s]*([A-Z\s,.-]+?)(?=\s*FIRST NAME|$)/);
+    if (lastNameMatch) parsed.last_name = lastNameMatch[1].replace(/[^A-Z\s]/g, '').trim();
+
+    // 2. First Name (Matches "FIRST NAME MARK JEM NAME EXTENSION" or similar)
+    const firstNameMatch = cleanText.match(/FIRST NAME[:\s]*([A-Z\s,.-]+?)(?=\s*NAME EXTENSION|\s*MIDDLE NAME|$)/);
+    if (firstNameMatch) parsed.first_name = firstNameMatch[1].replace(/[^A-Z\s]/g, '').trim();
+
+    // 3. Middle Name
+    const middleNameMatch = cleanText.match(/MIDDLE NAME[:\s]*([A-Z\s,.-]+?)(?=\s*DATE OF BIRTH|$)/);
+    if (middleNameMatch) parsed.middle_name = middleNameMatch[1].replace(/[^A-Z\s]/g, '').trim();
+
+    // 4. Date of Birth (Matches any date format like MM/DD/YYYY)
+    const dobMatch = cleanText.match(/DATE OF BIRTH.*?(\d{1,2}[\/-]\d{1,2}[\/-]\d{4})/);
+    if (dobMatch) {
+       // Convert MM/DD/YYYY to YYYY-MM-DD for HTML date input
+       const parts = dobMatch[1].split(/[\/-]/);
+       if(parts.length === 3) parsed.birth_date = `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+    }
+
+    // 5. Email (Just search for the email pattern anywhere)
+    const emailMatch = rawText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+    if (emailMatch) parsed.email = emailMatch[0].toLowerCase();
 
     return parsed;
   };
@@ -70,17 +102,22 @@ export default function OCR() {
     setLoading(true);
     
     try {
+      // 1. Preprocess the image
+      const preprocessedImage = await preprocessImage(image);
+
+      // 2. Run Tesseract
       const result = await Tesseract.recognize(
-        image,
+        preprocessedImage,
         'eng',
         { logger: m => { if (m.status === 'recognizing text') setProgress(Math.round(m.progress * 100)); } }
       );
+      
       setText(result.data.text);
       
-      // Parse text into form fields
+      // 3. Parse using Regex
       const extractedData = parsePDS(result.data.text);
       setFormData(prev => ({ ...prev, ...extractedData }));
-      setStep(2); // Move to review step
+      setStep(2);
     } catch (err) {
       console.error(err);
       alert('OCR Failed');
@@ -93,7 +130,7 @@ export default function OCR() {
     try {
       await api.post('/employees', formData);
       alert('Employee Registered Successfully!');
-      navigate('/employees'); // Redirect to directory
+      navigate('/employees');
     } catch (err) {
       alert(err.response?.data?.error || 'Error registering employee');
     }
@@ -179,13 +216,19 @@ export default function OCR() {
               <p className="text-xs text-gray-500 mb-4">Verify and correct the extracted fields before saving.</p>
               
               <div className="space-y-4">
-                <div>
-                  <label className="text-sm text-gray-500 block mb-1">First Name</label>
-                  <input type="text" className="w-full border p-2 rounded" value={formData.first_name} onChange={e => setFormData({...formData, first_name: e.target.value})} />
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-sm text-gray-500 block mb-1">First Name</label>
+                    <input type="text" className="w-full border p-2 rounded" value={formData.first_name} onChange={e => setFormData({...formData, first_name: e.target.value})} />
+                  </div>
+                  <div>
+                    <label className="text-sm text-gray-500 block mb-1">Last Name</label>
+                    <input type="text" className="w-full border p-2 rounded" value={formData.last_name} onChange={e => setFormData({...formData, last_name: e.target.value})} />
+                  </div>
                 </div>
                 <div>
-                  <label className="text-sm text-gray-500 block mb-1">Last Name</label>
-                  <input type="text" className="w-full border p-2 rounded" value={formData.last_name} onChange={e => setFormData({...formData, last_name: e.target.value})} />
+                  <label className="text-sm text-gray-500 block mb-1">Middle Name</label>
+                  <input type="text" className="w-full border p-2 rounded" value={formData.middle_name} onChange={e => setFormData({...formData, middle_name: e.target.value})} />
                 </div>
                 <div>
                   <label className="text-sm text-gray-500 block mb-1">Email</label>
