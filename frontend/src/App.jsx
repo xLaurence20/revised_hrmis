@@ -4,7 +4,10 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Employees from './pages/Employees';
 import Attendance from './pages/Attendance';
-import { Users, LayoutDashboard, LogOut, Clock } from 'lucide-react';
+import Leaves from './pages/Leaves';
+
+
+import { Users, LayoutDashboard, LogOut, Clock, CalendarOff } from 'lucide-react';
 
 function Layout({ children }) {
   const { user, logout } = useAuth();
@@ -23,6 +26,9 @@ function Layout({ children }) {
           </Link>
           <Link to="/attendance" className="flex items-center gap-3 p-3 rounded hover:bg-slate-800 text-slate-300">
           <Clock size={20} /> Attendance
+        </Link>
+        <Link to="/leaves" className="flex items-center gap-3 p-3 rounded hover:bg-slate-800 text-slate-300">
+          <CalendarOff size={20} /> Leaves
         </Link>
         </nav>
         <div className="p-4 border-t border-slate-800">
@@ -47,6 +53,7 @@ export default function App() {
           <Route path="/" element={<Layout><Dashboard /></Layout>} />
           <Route path="/employees" element={<Layout><Employees /></Layout>} />
           <Route path="/attendance" element={<Layout><Attendance /></Layout>} />
+          <Route path="/leaves" element={<Layout><Leaves /></Layout>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
