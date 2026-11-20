@@ -22,6 +22,7 @@ export default function OCR() {
 
   // --- IMAGE PREPROCESSING ---
   // Converts to grayscale and boosts contrast to help Tesseract ignore table lines
+    // --- IMAGE PREPROCESSING ---
   const preprocessImage = (imageSrc) => {
     return new Promise((resolve) => {
       const img = new Image();
@@ -29,22 +30,27 @@ export default function OCR() {
       img.onload = () => {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        canvas.width = img.width;
-        canvas.height = img.height;
-        ctx.drawImage(img, 0, 0);
+        
+        // 1. RESIZE: Scale down to max 1500px width to prevent browser OOM crash
+        const MAX_WIDTH = 1500;
+        const scale = Math.min(1, MAX_WIDTH / img.width);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
+        // 2. GRAYSCALE + CONTRAST
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = imageData.data;
 
         for (let i = 0; i < data.length; i += 4) {
-          // Grayscale formula
           const gray = data[i] * 0.3 + data[i + 1] * 0.59 + data[i + 2] * 0.11;
-          // Boost contrast
-          const finalColor = gray > 128 ? 255 : 0; 
+          // Soft threshold: Keep it grayscale but boost contrast so lines fade and text stays dark
+          const finalColor = gray > 160 ? 255 : (gray < 80 ? 0 : gray); 
           
-          data[i] = finalColor;     // R
-          data[i + 1] = finalColor; // G
-          data[i + 2] = finalColor; // B
+          data[i] = finalColor;
+          data[i + 1] = finalColor;
+          data[i + 2] = finalColor;
         }
 
         ctx.putImageData(imageData, 0, 0);
