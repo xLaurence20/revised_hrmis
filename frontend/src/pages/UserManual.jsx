@@ -215,7 +215,7 @@ export default function UserManual() {
           </div>
           <div>
             <div className="text-slate-500 font-medium uppercase tracking-wider mb-1">Version</div>
-            <div className="font-semibold text-slate-900">2.0 (Super Detailed)</div>
+            <div className="font-semibold text-slate-900">1.0</div>
           </div>
           <div>
             <div className="text-slate-500 font-medium uppercase tracking-wider mb-1">Classification</div>
