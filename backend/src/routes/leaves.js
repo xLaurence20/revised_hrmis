@@ -115,4 +115,24 @@ router.put('/:id/action', authenticate, authorize('leave.approve'), async (req, 
   }
 });
 
+// Add this route inside backend/src/routes/leaves.js
+router.get('/my-balances', authenticate, async (req, res) => {
+  try {
+    // Find the logged-in user's employee_id
+    const [userRec] = await pool.query('SELECT employee_id FROM users WHERE id = ?', [req.user.id]);
+    if (!userRec[0]?.employee_id) return res.json({ vl: 0, sl: 0 });
+    
+    // Get ledger
+    const [ledger] = await pool.query('SELECT vl_balance, sl_balance FROM leave_credit_ledgers WHERE employee_id = ?', [userRec[0].employee_id]);
+    
+    if (!ledger.length) {
+      // If no ledger exists yet, return the default seed values
+      return res.json({ vl: 15.000, sl: 15.000 }); 
+    }
+    res.json({ vl: ledger[0].vl_balance, sl: ledger[0].sl_balance });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 export default router;

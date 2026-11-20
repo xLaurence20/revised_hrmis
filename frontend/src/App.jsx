@@ -10,18 +10,36 @@ import Reports from './pages/Reports';
 import OCR from './pages/OCR';
 import { Users, LayoutDashboard, LogOut, Clock, CalendarOff, FileText, ScanLine } from 'lucide-react';
 
+// 1. Security Guard Component
+function ProtectedRoute({ children, allowedRoles }) {
+  const { user } = useAuth();
+  
+  if (!user) return <Navigate to="/login" />;
+  
+  // If the route has allowedRoles and the user's role isn't in it, redirect to dashboard
+  if (allowedRoles && !allowedRoles.includes(user.role)) {
+    return <Navigate to="/" />;
+  }
+  
+  return children;
+}
+
 function Layout({ children }) {
   const { user, logout } = useAuth();
   if (!user) return <Navigate to="/login" />;
 
+  // 2. Define which roles can see which links in the sidebar
   const navItems = [
-    { path: '/', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
-    { path: '/employees', label: 'Employees', icon: <Users size={20} /> },
-    { path: '/attendance', label: 'Attendance', icon: <Clock size={20} /> },
-    { path: '/leaves', label: 'Leaves', icon: <CalendarOff size={20} /> },
-    { path: '/reports', label: 'Reports', icon: <FileText size={20} /> },
-    { path: '/ocr', label: 'OCR & TLB', icon: <ScanLine size={20} /> },
+    { path: '/', label: 'Dashboard', icon: <LayoutDashboard size={20} />, roles: ['administrator', 'hr_personnel', 'attendance_staff', 'leave_staff', 'gsis_staff', 'reviewer', 'final_approver', 'employee'] },
+    { path: '/employees', label: 'Employees', icon: <Users size={20} />, roles: ['administrator', 'hr_personnel', 'reviewer', 'final_approver'] },
+    { path: '/attendance', label: 'Attendance', icon: <Clock size={20} />, roles: ['administrator', 'attendance_staff', 'hr_personnel', 'reviewer'] },
+    { path: '/leaves', label: 'Leaves', icon: <CalendarOff size={20} />, roles: ['administrator', 'leave_staff', 'reviewer', 'final_approver', 'employee'] },
+    { path: '/reports', label: 'Reports', icon: <FileText size={20} />, roles: ['administrator', 'hr_personnel', 'final_approver'] },
+    { path: '/ocr', label: 'OCR & TLB', icon: <ScanLine size={20} />, roles: ['administrator', 'hr_personnel'] },
   ];
+
+  // 3. Filter the sidebar links based on the logged-in user's role
+  const allowedNavItems = navItems.filter(item => item.roles.includes(user.role));
 
   return (
     <div className="flex h-screen bg-slate-50">
@@ -36,7 +54,7 @@ function Layout({ children }) {
         
         {/* Navigation */}
         <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
-          {navItems.map((item) => (
+          {allowedNavItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
@@ -89,12 +107,41 @@ export default function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          
+          {/* Universal Routes */}
           <Route path="/" element={<Layout><Dashboard /></Layout>} />
-          <Route path="/employees" element={<Layout><Employees /></Layout>} />
-          <Route path="/attendance" element={<Layout><Attendance /></Layout>} />
-          <Route path="/leaves" element={<Layout><Leaves /></Layout>} />
-          <Route path="/reports" element={<Layout><Reports /></Layout>} />
-          <Route path="/ocr" element={<Layout><OCR /></Layout>} />
+          
+          {/* Protected Routes */}
+          <Route path="/employees" element={
+            <ProtectedRoute allowedRoles={['administrator', 'hr_personnel', 'reviewer', 'final_approver']}>
+              <Layout><Employees /></Layout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/attendance" element={
+            <ProtectedRoute allowedRoles={['administrator', 'attendance_staff', 'hr_personnel', 'reviewer']}>
+              <Layout><Attendance /></Layout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/leaves" element={
+            <ProtectedRoute allowedRoles={['administrator', 'leave_staff', 'reviewer', 'final_approver', 'employee']}>
+              <Layout><Leaves /></Layout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/reports" element={
+            <ProtectedRoute allowedRoles={['administrator', 'hr_personnel', 'final_approver']}>
+              <Layout><Reports /></Layout>
+            </ProtectedRoute>
+          } />
+
+          <Route path="/ocr" element={
+            <ProtectedRoute allowedRoles={['administrator', 'hr_personnel']}>
+              <Layout><OCR /></Layout>
+            </ProtectedRoute>
+          } />
+
         </Routes>
       </BrowserRouter>
     </AuthProvider>
