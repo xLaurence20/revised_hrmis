@@ -4,6 +4,8 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { pool } from '../db.js';
 import { authenticate } from '../middleware/auth.js';
+import { logAudit } from '../utils/audit.js';
+
 
 const router = express.Router();
 const isProd = process.env.NODE_ENV === 'production';
@@ -38,6 +40,7 @@ router.post('/login', async (req, res) => {
     res.cookie('refreshToken', refreshToken, { ...cookieOpts, maxAge: 7 * 24 * 60 * 60 * 1000 });
 
     res.json({ user: { id: user.id, email: user.email, role: user.role } });
+       await logAudit(user.id, 'LOGIN', 'users', user.id, req);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
