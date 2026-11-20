@@ -6,7 +6,9 @@ import Employees from './pages/Employees';
 import Attendance from './pages/Attendance';
 import Leaves from './pages/Leaves';
 import Reports from './pages/Reports';
-import { Users, LayoutDashboard, LogOut, Clock, CalendarOff, FileText } from 'lucide-react';
+import OCR from './pages/OCR'
+
+import { Users, LayoutDashboard, LogOut, Clock, CalendarOff, FileText, ScanLine  } from 'lucide-react';
 
 function Layout({ children }) {
   const { user, logout } = useAuth();
@@ -31,6 +33,9 @@ function Layout({ children }) {
           </Link>
           <Link to="/reports" className="flex items-center gap-3 p-3 rounded hover:bg-slate-800 text-slate-300">
             <FileText size={20} /> Reports
+          </Link>
+          <Link to="/ocr" className="flex items-center gap-3 p-3 rounded hover:bg-slate-800 text-slate-300">
+            <ScanLine size={20} /> OCR & TLB
           </Link>
         </nav>
         <div className="p-4 border-t border-slate-800">
@@ -57,6 +62,7 @@ export default function App() {
           <Route path="/attendance" element={<Layout><Attendance /></Layout>} />
           <Route path="/leaves" element={<Layout><Leaves /></Layout>} />
           <Route path="/reports" element={<Layout><Reports /></Layout>} />
+          <Route path="/ocr" element={<Layout><OCR /></Layout>} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
