@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate , Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Lock, User, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -122,15 +122,9 @@ export default function Login() {
               </button>
             </form>
 
-            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-  <span>Trouble signing in? Contact Municipal HR.</span>
-  <Link
-    href="/help"
-    className="font-semibold text-blue-600 hover:text-blue-700 hover:underline"
-  >
-    User Manual
-  </Link>
-</div>
+            <p className="text-center text-sm text-slate-500 mt-8">
+              Trouble signing in? Contact the <a href="#" className="text-blue-600 font-semibold hover:underline">Municipal HR Office</a>.
+            </p>
           </div>
           
           <div className="text-center mt-8 text-slate-400 text-xs">
