@@ -22,15 +22,20 @@ router.get('/', authenticate, authorize('employee.read'), async (req, res) => {
 });
 
 // Create employee
+// Create employee
 router.post('/', authenticate, authorize('employee.create'), async (req, res) => {
-  const { employee_no, first_name, last_name, department_id, position_id, date_hired, employment_status } = req.body;
+  const { employee_no, first_name, last_name, department_id, position_id, date_hired, employment_status, email, birth_date } = req.body;
+  
+  // Auto-generate employee_no if missing (e.g., EMP-1712345678)
+  const empNo = employee_no || `EMP-${Date.now().toString().slice(-6)}`;
+
   try {
     const [result] = await pool.query(`
-      INSERT INTO employees (employee_no, first_name, last_name, department_id, position_id, date_hired, employment_status)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `, [employee_no, first_name, last_name, department_id || null, position_id || null, date_hired, employment_status || 'regular']);
+      INSERT INTO employees (employee_no, first_name, last_name, email, birth_date, department_id, position_id, date_hired, employment_status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [empNo, first_name, last_name, email || null, birth_date || null, department_id || null, position_id || null, date_hired || new Date(), employment_status || 'regular']);
     
-    res.status(201).json({ id: result.insertId, message: 'Employee created' });
+    res.status(201).json({ id: result.insertId, message: 'Employee registered successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
