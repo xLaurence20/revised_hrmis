@@ -122,9 +122,15 @@ export default function Login() {
               </button>
             </form>
 
-            <p className="text-center text-sm text-slate-500 mt-8">
-              Trouble signing in? Contact the <a href="#" className="text-blue-600 font-semibold hover:underline">Municipal HR Office</a>.
-            </p>
+            <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+  <span>Trouble signing in? Contact Municipal HR.</span>
+  <a
+    href="/user-manual"
+    className="font-semibold text-blue-600 hover:text-blue-700 hover:underline"
+  >
+    User Manual
+  </a>
+</div>
           </div>
           
           <div className="text-center mt-8 text-slate-400 text-xs">
