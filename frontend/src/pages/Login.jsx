@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate , Link } from 'react-router-dom';
-import { Lock, User, ShieldCheck, Eye, EyeOff , BookOpen } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Lock, User, ShieldCheck, Eye, EyeOff } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function Login() {
@@ -122,20 +122,9 @@ export default function Login() {
               </button>
             </form>
 
-            <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col items-center gap-2.5 text-center">
-  <p className="text-xs text-slate-500">
-    Trouble signing in? Contact the{' '}
-    <span className="font-medium text-blue-600">Municipal HR Office</span>.
-  </p>
-
-  <Link
-  to="/help"
-  className="mt-3 w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 text-sm font-semibold transition-colors"
->
-  <HelpCircle size={17} />
-  <span>User Manual</span>
-</Link>
-</div>
+            <p className="text-center text-sm text-slate-500 mt-8">
+              Trouble signing in? Contact the <a href="#" className="text-blue-600 font-semibold hover:underline">Municipal HR Office</a>.
+            </p>
           </div>
           
           <div className="text-center mt-8 text-slate-400 text-xs">
