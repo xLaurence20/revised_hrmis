@@ -65,7 +65,7 @@ router.put('/:id/action', authenticate, authorize('leave.approve'), async (req, 
   const leaveId = req.params.id;
   const conn = await pool.getConnection();
 
-  try {
+    try {
     await conn.beginTransaction();
 
     // 1. Get the application
@@ -77,12 +77,12 @@ router.put('/:id/action', authenticate, authorize('leave.approve'), async (req, 
       throw new Error('Application is already finalized.');
     }
 
-    // 2. Update Status
+    // 2. Update Status (Using SINGLE QUOTES for string values)
     if (action === 'review') {
-      await conn.query('UPDATE leave_applications SET status = "reviewed", reviewed_by = ?, reviewed_at = NOW() WHERE id = ?', [req.user.id, leaveId]);
+      await conn.query("UPDATE leave_applications SET status = 'reviewed', reviewed_by = ?, reviewed_at = NOW() WHERE id = ?", [req.user.id, leaveId]);
     } 
     else if (action === 'reject') {
-      await conn.query('UPDATE leave_applications SET status = "rejected", approved_by = ?, approved_at = NOW() WHERE id = ?', [req.user.id, leaveId]);
+      await conn.query("UPDATE leave_applications SET status = 'rejected', approved_by = ?, approved_at = NOW() WHERE id = ?", [req.user.id, leaveId]);
     } 
     else if (action === 'approve') {
       // Deduct Credits
@@ -102,7 +102,7 @@ router.put('/:id/action', authenticate, authorize('leave.approve'), async (req, 
         throw new Error(`Insufficient ${type === 'vl_balance' ? 'Vacation' : 'Sick'} Leave credits.`);
       }
 
-      await conn.query('UPDATE leave_applications SET status = "approved", approved_by = ?, approved_at = NOW() WHERE id = ?', [req.user.id, leaveId]);
+      await conn.query("UPDATE leave_applications SET status = 'approved', approved_by = ?, approved_at = NOW() WHERE id = ?", [req.user.id, leaveId]);
     }
 
     await conn.commit();
