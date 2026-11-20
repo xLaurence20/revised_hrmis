@@ -298,7 +298,7 @@ export default function UserManual() {
                   <tr>
                     <td className="p-3 font-semibold text-slate-900">Super Admin / HRMO Head</td>
                     <td className="p-3 text-slate-600">
-                      Full access to all 201 employee files, leave approvals, DTR adjustments,
+                      Full access to all employee files, leave approvals, DTR adjustments,
                       Terminal Leave Benefit (TLB) computation, user management, and audit logs.
                     </td>
                   </tr>
