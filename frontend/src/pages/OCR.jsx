@@ -60,35 +60,55 @@ export default function OCR() {
   };
 
   // --- REGEX PARSER ---
+   // --- REGEX PARSER (Line-by-Line) ---
   const parsePDS = (rawText) => {
     let parsed = { ...formData };
     
-    // Remove extra spaces and newlines for easier matching
-    const cleanText = rawText.replace(/\s+/g, ' ').toUpperCase();
+    // Split text into lines, clean them up, and remove empty lines
+    const lines = rawText.split('\n').map(l => l.trim().toUpperCase()).filter(l => l.length > 1);
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      
+      // 1. Last Name
+      if (line.includes('SURNAME') && !line.includes('SPOUSE') && !line.includes('FATHER') && !line.includes('MOTHER')) {
+        // If value is on the same line (e.g., "SURNAME: FORTU")
+        let val = line.replace(/SURNAME|:|2\./g, '').trim();
+        // If value is empty, grab the next line
+        if (!val && i + 1 < lines.length) val = lines[i + 1];
+        
+        // Clean up random numbers/symbols that OCR picked up
+        parsed.last_name = val.replace(/[^A-Z\s]/g, '').trim();
+      }
+      
+      // 2. First Name
+      if (line.includes('FIRST NAME') && !line.includes('SPOUSE') && !line.includes('FATHER') && !line.includes('MOTHER')) {
+        let val = line.replace(/FIRST NAME|:|/g, '').trim();
+        if (!val && i + 1 < lines.length) val = lines[i + 1];
+        parsed.first_name = val.replace(/[^A-Z\s]/g, '').trim();
+      }
 
-    // 1. Last Name (Matches "SURNAME FORTU FIRST NAME" or "SURNAME: FORTU")
-    const lastNameMatch = cleanText.match(/SURNAME[:\s]*([A-Z\s,.-]+?)(?=\s*FIRST NAME|$)/);
-    if (lastNameMatch) parsed.last_name = lastNameMatch[1].replace(/[^A-Z\s]/g, '').trim();
+      // 3. Middle Name
+      if (line.includes('MIDDLE NAME') && !line.includes('SPOUSE') && !line.includes('FATHER') && !line.includes('MOTHER')) {
+        let val = line.replace(/MIDDLE NAME|:|/g, '').trim();
+        if (!val && i + 1 < lines.length) val = lines[i + 1];
+        parsed.middle_name = val.replace(/[^A-Z\s]/g, '').trim();
+      }
 
-    // 2. First Name (Matches "FIRST NAME MARK JEM NAME EXTENSION" or similar)
-    const firstNameMatch = cleanText.match(/FIRST NAME[:\s]*([A-Z\s,.-]+?)(?=\s*NAME EXTENSION|\s*MIDDLE NAME|$)/);
-    if (firstNameMatch) parsed.first_name = firstNameMatch[1].replace(/[^A-Z\s]/g, '').trim();
+      // 4. Email (Search anywhere)
+      const emailMatch = line.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/);
+      if (emailMatch) parsed.email = emailMatch[0].toLowerCase();
 
-    // 3. Middle Name
-    const middleNameMatch = cleanText.match(/MIDDLE NAME[:\s]*([A-Z\s,.-]+?)(?=\s*DATE OF BIRTH|$)/);
-    if (middleNameMatch) parsed.middle_name = middleNameMatch[1].replace(/[^A-Z\s]/g, '').trim();
-
-    // 4. Date of Birth (Matches any date format like MM/DD/YYYY)
-    const dobMatch = cleanText.match(/DATE OF BIRTH.*?(\d{1,2}[\/-]\d{1,2}[\/-]\d{4})/);
-    if (dobMatch) {
-       // Convert MM/DD/YYYY to YYYY-MM-DD for HTML date input
-       const parts = dobMatch[1].split(/[\/-]/);
-       if(parts.length === 3) parsed.birth_date = `${parts[2]}-${parts[0].padStart(2, '0')}-${parts[1].padStart(2, '0')}`;
+      // 5. Date of Birth
+      if (line.includes('DATE OF BIRTH')) {
+        // Check current line and next line for a date format (MM/DD/YYYY)
+        const combinedLine = line + " " + (lines[i+1] || "");
+        const dateMatch = combinedLine.match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+        if (dateMatch) {
+          parsed.birth_date = `${dateMatch[3]}-${dateMatch[1].padStart(2, '0')}-${dateMatch[2].padStart(2, '0')}`;
+        }
+      }
     }
-
-    // 5. Email (Just search for the email pattern anywhere)
-    const emailMatch = rawText.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-    if (emailMatch) parsed.email = emailMatch[0].toLowerCase();
 
     return parsed;
   };
