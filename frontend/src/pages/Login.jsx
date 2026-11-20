@@ -125,7 +125,7 @@ export default function Login() {
             <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
   <span>Trouble signing in? Contact Municipal HR.</span>
   <a
-    href="/user-manual"
+    href="/help"
     className="font-semibold text-blue-600 hover:text-blue-700 hover:underline"
   >
     User Manual
