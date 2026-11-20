@@ -26,7 +26,7 @@ const TOC_LEFT = [
   { id: 'roles', num: 2, title: 'Roles & what each can do' },
   { id: 'workflow', num: 3, title: 'The HRMIS workflow at a glance' },
   { id: 'step-dashboard', num: 4, title: 'Step 1 · Dashboard & analytics' },
-  { id: 'step-employees', num: 5, title: 'Step 2 · Managing 201 employee records' },
+  { id: 'step-employees', num: 5, title: 'Step 2 · Managing  employee records' },
   { id: 'step-attendance', num: 6, title: 'Step 3 · Timekeeping & DTR logs' },
 ];
 
@@ -376,7 +376,7 @@ export default function UserManual() {
                   <tr>
                     <td className="p-3 font-bold text-slate-900">Employee (Self-Service)</td>
                     <td className="p-3 text-slate-600">Read-only access to personal data and specific self-service modules.</td>
-                    <td className="p-3 text-slate-600">View personal 201 profile, check daily DTR logs, monitor VL/SL credit balances, file leave requests.</td>
+                    <td className="p-3 text-slate-600">View personal  profile, check daily DTR logs, monitor VL/SL credit balances, file leave requests.</td>
                   </tr>
                 </tbody>
               </table>
@@ -395,7 +395,7 @@ export default function UserManual() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
               {[
-                { step: 'Phase 1: Onboarding', desc: 'HR encodes new employee 201 profile or scans Personal Data Sheet (PDS) via OCR for auto-population.', icon: Users },
+                { step: 'Phase 1: Onboarding', desc: 'HR encodes new employee 21 profile or scans Personal Data Sheet (PDS) via OCR for auto-population.', icon: Users },
                 { step: 'Phase 2: Daily Ops', desc: 'Employees log biometric/manual time-in & out. HR imports daily logs and resolves discrepancies.', icon: Clock },
                 { step: 'Phase 3: Leave Mgmt', desc: 'Employee files VL/SL online. Department Head recommends. HRMO approves and deducts from ledger.', icon: CalendarOff },
                 { step: 'Phase 4: Compliance', desc: 'At month-end, HR generates CS Form 48 DTRs, issues COEs, and computes Terminal Leave Benefits.', icon: FileText },
@@ -512,7 +512,7 @@ export default function UserManual() {
           <section id="step-employees" className="bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm scroll-mt-24">
             <h2 className="text-xl font-bold text-emerald-900 mb-4 flex items-center gap-2">
               <span className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center text-sm">5</span>
-              Step 2 · Managing 201 employee records
+              Step 2 · Managing  employee records
             </h2>
             <p className="text-slate-600 text-sm mb-6">
               The <strong>Employees</strong> module is the central repository for all municipal personnel data. Use it to add new hires, search by name or Employee ID, filter by department, or update salary grades and employment status.
@@ -535,7 +535,7 @@ export default function UserManual() {
             </ProTip>
 
             <AnnotatedScreen
-              title="HRMIS — 201 Employee Directory"
+              title="HRMIS —  Employee Directory"
               url="https://hrmis-lapaz.vercel.app/employees"
               callouts={[
                 { num: 1, label: '+ Add Employee Button', desc: 'Opens the registration modal for Employee ID, Personal Info, Department, Position, Salary Grade, and Daily Rate.' },
@@ -832,7 +832,7 @@ export default function UserManual() {
                 Navigate to the OCR tab and drag-and-drop a clear, high-resolution JPG, PNG, or PDF of the employee's PDS or Service Record into the dropzone.
               </Step>
               <Step num="2" title="Verify Extracted Data">
-                The system will parse the image and populate a preview form. <strong>Always manually verify</strong> the extracted Name, Position, Salary Grade, and Dates before clicking "Save to 201 Repository".
+                The system will parse the image and populate a preview form. <strong>Always manually verify</strong> the extracted Name, Position, Salary Grade, and Dates before clicking "Save to  Repository".
               </Step>
               <Step num="3" title="Compute Terminal Leave Benefit (TLB)">
                 Enter the employee's highest monthly salary and total accumulated leave credits. The system applies the CSC formula to generate the monetized value instantly.
@@ -844,7 +844,7 @@ export default function UserManual() {
               url="https://hrmis-lapaz.vercel.app/ocr"
               callouts={[
                 { num: 1, label: 'Document Upload Dropzone', desc: 'Upload JPG, PNG, or scanned service records to extract structured text automatically via AI.' },
-                { num: 2, label: 'Extracted Text & Autofill Preview', desc: 'Review parsed employee details and save directly into the 201 repository after verification.' },
+                { num: 2, label: 'Extracted Text & Autofill Preview', desc: 'Review parsed employee details and save directly into the  repository after verification.' },
                 { num: 3, label: 'Terminal Leave Benefit (TLB) Calculator', desc: 'Multiplies Highest Monthly Salary × Total Accumulated Leave Credits × 0.0481927.' },
               ]}
             >
