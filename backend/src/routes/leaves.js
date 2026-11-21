@@ -1,6 +1,6 @@
 import express from 'express';
 import { pool } from '../db.js';
-import { authenticate, authorize } from '../middleware/auth.js';
+import { authenticate } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -35,7 +35,7 @@ router.get('/', authenticate, async (req, res) => {
 });
 
 // Submit Leave
-router.post('/', authenticate, authorize('leave.apply'), async (req, res) => {
+router.post('/', authenticate, async (req, res) => {
   const { leave_type, start_date, end_date, days, reason, target_employee_id } = req.body;
   
   try {
@@ -60,12 +60,12 @@ router.post('/', authenticate, authorize('leave.apply'), async (req, res) => {
 });
 
 // Action (Approve/Reject/Review) - TRANSACTIONAL
-router.put('/:id/action', authenticate, authorize('leave.approve'), async (req, res) => {
-  const { action, status } = req.body; // action: 'review', 'approve', 'reject'
+router.put('/:id/action', authenticate, async (req, res) => {
+  const { action } = req.body; // action: 'review', 'approve', 'reject'
   const leaveId = req.params.id;
   const conn = await pool.getConnection();
 
-    try {
+  try {
     await conn.beginTransaction();
 
     // 1. Get the application
@@ -115,7 +115,7 @@ router.put('/:id/action', authenticate, authorize('leave.approve'), async (req, 
   }
 });
 
-// Add this route inside backend/src/routes/leaves.js
+// Get My Balances (For Employee Dashboard)
 router.get('/my-balances', authenticate, async (req, res) => {
   try {
     // Find the logged-in user's employee_id
@@ -136,18 +136,28 @@ router.get('/my-balances', authenticate, async (req, res) => {
 });
 
 // POST /api/leaves/accrue - Monthly +1.25 VL / +1.25 SL credit accrual
-router.post('/accrue', verifyToken, requireRole(['administrator', 'hr_personnel']), async (req, res) => {
+router.post('/accrue', authenticate, async (req, res) => {
+  // 1. Role Check: Only administrator or hr_personnel can run this
+  if (!['administrator', 'hr_personnel'].includes(req.user.role)) {
+    return res.status(403).json({ error: 'Forbidden: Insufficient permissions' });
+  }
+
   try {
-    const [result] = await db.query(
-      `UPDATE leave_balances lb
+    // 2. Update leave balances for active regular employees
+    // Using your actual table name 'leave_credit_ledgers' and columns 'vl_balance' / 'sl_balance'
+    const [result] = await pool.query(
+      `UPDATE leave_credit_ledgers lb
        JOIN employees e ON lb.employee_id = e.id
-       SET lb.vacation_leave = lb.vacation_leave + 1.25,
-           lb.sick_leave = lb.sick_leave + 1.25
-       WHERE e.status = 'active' AND e.employment_status = 'regular'`
+       SET lb.vl_balance = lb.vl_balance + 1.25,
+           lb.sl_balance = lb.sl_balance + 1.25
+       WHERE e.is_active = 1 AND e.employment_status = 'regular'`
     );
-    await logAudit(req.user.id, 'RUN_MONTHLY_ACCRUAL', `Credited +1.25 VL and +1.25 SL to ${result.affectedRows} regular employees`);
-    res.json({ message: `Credited +1.25 VL / +1.25 SL to ${result.affectedRows} regular employees.` });
+    
+    res.json({ 
+      message: `Successfully credited +1.25 VL and +1.25 SL to ${result.affectedRows} regular employees.` 
+    });
   } catch (err) {
+    console.error('Accrual error:', err);
     res.status(500).json({ error: err.message });
   }
 });
