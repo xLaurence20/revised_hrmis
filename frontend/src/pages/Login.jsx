@@ -2,13 +2,15 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { Lock, User, ShieldCheck, Eye, EyeOff, BookOpen } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
+import api from '../api';
 import toast from 'react-hot-toast';
 
 export default function Login() {
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useAuth();
+  const { login, setUser } = useAuth(); // Ensure setUser is available if your context supports it, otherwise just navigate
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -23,14 +25,31 @@ export default function Login() {
     }
   };
 
+  // --- NEW: Handle Google Sign-In Success ---
+  const handleGoogleSuccess = async (credentialResponse) => {
+    const loadingToast = toast.loading('Signing in with Google...');
+    try {
+      // Send the Google token to our backend
+      const { data } = await api.post('/auth/google', { token: credentialResponse.credential });
+      
+      // If your AuthContext has a setUser function, call it here:
+      // setUser(data.user); 
+      
+      toast.success('Google login successful!', { id: loadingToast });
+      navigate('/');
+    } catch (err) {
+      toast.error('Google login failed', { id: loadingToast });
+      console.error(err);
+    }
+  };
+
   return (
     <div className="min-h-screen flex bg-slate-900 overflow-hidden relative">
       {/* Background Image with Overlay */}
       <div
         className="absolute inset-0 z-0 bg-cover bg-center"
         style={{
-          backgroundImage:
-            "url(/bg-hall.jpg)",
+          backgroundImage: "url(/bg-hall.jpg)",
           filter: 'blur(4px) brightness(0.4)',
         }}
       />
@@ -145,6 +164,30 @@ export default function Login() {
               Sign In
             </button>
           </form>
+
+          {/* --- NEW: Google Sign-In Divider & Button --- */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-200"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-3 bg-white text-slate-500">Or continue with</span>
+            </div>
+          </div>
+
+          <div className="w-full flex justify-center">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => toast.error('Google login failed')}
+              useOneTap
+              theme="outline"
+              size="large"
+              text="signin_with"
+              shape="rectangular"
+              width="100%"
+            />
+          </div>
+          {/* ---------------------------------------- */}
 
           {/* Bottom User Manual & Help Link */}
           <div className="mt-6 pt-5 border-t border-slate-200 flex flex-col items-center gap-3">

@@ -8,6 +8,7 @@ import attendanceRoutes from './routes/attendance.js';
 import leaveRoutes from './routes/leaves.js';
 import reportRoutes from './routes/reports.js';
 import tlbRoutes from './routes/tlb.js';
+import googleAuthRoutes from './routes/googleAuth.js';
 
 const app = express();
 app.set('trust proxy', 1); 
@@ -25,6 +26,7 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/leaves', leaveRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/tlb', tlbRoutes);
+app.use('/api/auth/google', googleAuthRoutes);
 
 app.get('/api/health', (req, res) => res.send('OK'));
 
