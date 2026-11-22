@@ -26,17 +26,16 @@ export default function Login() {
   };
 
   // --- NEW: Handle Google Sign-In Success ---
-  const handleGoogleSuccess = async (credentialResponse) => {
+    const handleGoogleSuccess = async (credentialResponse) => {
     const loadingToast = toast.loading('Signing in with Google...');
     try {
-      // Send the Google token to our backend
       const { data } = await api.post('/auth/google', { token: credentialResponse.credential });
       
-      // If your AuthContext has a setUser function, call it here:
-      // setUser(data.user); 
-      
       toast.success('Google login successful!', { id: loadingToast });
-      navigate('/');
+      
+      // ✅ CHANGE THIS LINE: Force a full reload so the app sees the new login cookie
+      window.location.href = '/'; 
+      
     } catch (err) {
       toast.error('Google login failed', { id: loadingToast });
       console.error(err);
