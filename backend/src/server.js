@@ -26,7 +26,7 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/leaves', leaveRoutes);
 app.use('/api/reports', reportRoutes);
 app.use('/api/tlb', tlbRoutes);
-app.use('/api/auth/google', googleAuthRoutes);
+app.use('/api/auth', googleAuthRoutes);
 
 app.get('/api/health', (req, res) => res.send('OK'));
 
